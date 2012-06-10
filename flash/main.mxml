@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
+        width="640" height="480" layout="absolute"
+        creationComplete="application1_creationCompleteHandler(event)">
+
+	    <mx:Style>
+	    	#box {
+	    		background-color: #000000;
+	    	}
+	    	#bandwidth {
+	    		color: #ffffff;
+	    	}
+	    </mx:Style>
+
+        <mx:Script>
+                <![CDATA[
+	                    import mx.core.UIComponent;
+						import mx.core.FlexGlobals;
+                        import mx.events.FlexEvent;
+						import mx.events.CloseEvent;
+                        import mx.controls.Alert;
+                        private var connection:NetConnection;
+                        private var video:Video;
+                        private var stream:NetStream;
+                        private var camera:Camera;
+						private var mic:Microphone;
+         				private var t:Timer;
+         				                        
+						private var param:Object;
+						private var recording:Boolean;
+						private var seconds:int=0;
+						private var secondsMax:int=60;
+
+						[Embed("assets/red_ball.png")]
+			            public var redBall:Class;
+
+						[Embed("assets/gray_ball.png")]
+			            public var grayBall:Class;
+
+
+                        protected function application1_creationCompleteHandler(event:FlexEvent):void
+                        {
+							param = FlexGlobals.topLevelApplication.parameters;
+							recording = false;
+							
+                            connection = new NetConnection();
+                            connection.connect(param.rtmp, param.ticket);
+                            connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
+
+			                t = new Timer(1000);
+			                t.addEventListener(TimerEvent.TIMER, updateTimer);
+			                t.start();
+                        }
+                        
+                        private function onConnected(event:NetStatusEvent) : void {
+			                switch( event.info.code ) {
+			                    case "NetConnection.Connect.Success":
+			                        connectionSuccess();
+			                    break;
+			                    case "NetConnection.Connect.Failed":
+			                        connectionFailed("Verbindung nicht erfolgreich");
+			                    break;
+			                    case "NetConnection.Connect.Rejected":
+			                        connectionFailed("Verbindung nicht erlaubt");
+			                    break;
+			                    default:
+			                        trace( "netStatusHandler:code: " + event.info.code );
+			                    break;
+			                }
+						}
+
+						private function connectionSuccess():void {
+                            video = new Video(param.width, param.height);
+                            
+                            // create camera
+                            camera = Camera.getCamera();
+							camera.setMode(param.width, param.height, param.fps);
+                            camera.setQuality(param.bandwidth, param.quality);
+
+							mic = Microphone.getMicrophone();
+                            
+                            // create the netstream
+                            stream = new NetStream(connection);
+                        	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
+                            stream.attachCamera(camera);
+							stream.attachAudio(mic);
+                            stream.publish(param.name);
+
+                            video.attachCamera(camera);
+							                                
+                            // wrap video
+                            var ui:UIComponent = new UIComponent();
+                            ui.addChild(video);
+                            ui.move(0,0);
+                            vid.addChild(ui);
+                        }
+
+                        private function onConsumeStream(event:NetStatusEvent) : void {
+			                switch( event.info.code ) {
+			                    case "NetStream.Failed":
+			                        connectionFailed("Ihr Ticket ist nicht gültig.");
+			                    break;
+			                    default:
+			                        trace( "netStatusHandler:code: " + event.info.code );
+			                    break;
+			                }
+						}
+
+                        private function onPublishStream(event:NetStatusEvent) : void {
+			                switch( event.info.code ) {
+			                    case "NetStream.Failed":
+			                        connectionFailed("Ihr Ticket ist nicht gültig.");
+			                    break;
+			                    default:
+			                        trace( "netStatusHandler:code: " + event.info.code );
+			                    break;
+			                }
+						}
+
+
+						private function connectionFailed(s:String):void {
+							Alert.show(s, "Fehler", Alert.OK);
+						}
+			
+						private function setButtonStyle(c:Class):void {
+		                	recordButton.setStyle("upSkin", c);
+		                	recordButton.setStyle("overSkin", c);
+		                	recordButton.setStyle("downSkin", c);
+						}
+			
+			            private function updateTimer(evt:TimerEvent):void {
+			            	var txt:String = "";
+
+			            	if (stream!=null)
+			            		txt += String(int(stream.info.currentBytesPerSecond/1024)+" KB/s");
+			            		
+			                if (recording) {
+			                	txt += " Recording";
+			                	if (recordButton.getStyle("upSkin")==grayBall) {
+				                	setButtonStyle(redBall);
+				                } else {
+				                	setButtonStyle(grayBall);
+				                }
+			                	progress.setProgress(seconds,secondsMax);
+			                	seconds++;
+				                if (seconds>secondsMax)
+				                	recordClicked();
+			                }
+			                bandwidth.text = txt;
+			            }
+			            
+						private function recordClicked():void {
+							if (recording) {
+								connection.call("streamManager.stopRecordingShow", null);	
+			                	setButtonStyle(redBall);
+			                	progress.setProgress(0,100);
+			                	seconds = 0;
+			                	Alert.show( "Would you like publish your video?", "Publish?", 
+      								Alert.YES | Alert.NO, this, closeHandler, null, Alert.YES );
+							} else {
+								connection.call("streamManager.recordShow", null);
+							}
+							recording = !recording;
+						}
+						
+						private function closeHandler(event:CloseEvent):void
+					      {
+					        if (event.detail == Alert.YES)
+					        {
+					          connection.call("streamManager.publishRecording", null);
+					        }
+					        else
+					        {
+					          connection.call("streamManager.deleteRecording", null);
+					        }
+					      }    
+						
+                ]]>
+        </mx:Script>
+        <mx:Box x="0" y="0" width="100%" height="100%" verticalGap="0">
+	        <mx:Canvas id="vid" x="0" y="0" width="320" height="240"/>
+	        <mx:HBox id="box" width="100%" height="26"
+		        paddingTop="3" 
+		        paddingBottom="3" 
+		        paddingLeft="10" 
+		        paddingRight="10">
+	        	<mx:Button id="recordButton"
+	        		upSkin="@Embed(source='assets/red_ball.png')" 
+	        		overSkin="@Embed(source='assets/red_ball.png')" 
+	        		downSkin="@Embed(source='assets/red_ball.png')" 
+	        		toolTip="Start and stop recording"
+	        		click="recordClicked()"
+	        	/>
+				<mx:ProgressBar width="150" mode="manual" minimum="0" maximum="100" id="progress"/>
+		        <mx:Label x="2" y="2" text="Label" id="bandwidth"/>
+		    </mx:HBox> 
+	    </mx:Box> 
+</mx:Application>

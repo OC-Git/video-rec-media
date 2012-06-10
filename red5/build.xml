@@ -1,0 +1,54 @@
+<?xml version="1.0" ?>
+<project name="videorec" basedir="." default="install" >
+    <!-- project properties -->
+    <property environment="env"/>
+    <!-- user overides for project properties -->
+    <property file="${user.home}/build.properties"/>
+    <!-- base project properties -->
+    <property file="build.properties"/>
+    
+    <property name="java.home" value="${env.JDK_HOME}"/>
+    <property name="src.dir" value="src"/>
+    <property name="lib.dir" value="lib"/>
+    <property name="classes.dir" value="web/WEB-INF/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="red5.dir" value="/Users/viola/Workspaces/osp/red5/dist"/>
+	
+    <path id="project.classpath">
+        <fileset dir="${lib.dir}"/>
+    </path>
+    
+    <target name="clean">
+        <delete dir="${classes.dir}"/>
+        <delete dir="${dist.dir}"/>    	
+    </target>
+    
+    <target name="compile">
+        <property name="dest.dir" value="${classes.dir}"/>
+    	<mkdir dir="${dest.dir}"/>
+        <javac sourcepath="" srcdir="${src.dir}" destdir="${dest.dir}" classpathref="project.classpath"
+             optimize="${build.optimize}" verbose="${build.verbose}" fork="${build.fork}" nowarn="${build.nowarn}"
+             deprecation="${build.deprecation}" debug="${debug.state}" compiler="modern"
+             listfiles="false"/>
+    </target>
+    
+    <target name="war" depends="compile">
+		<war destfile="${dist.dir}/${ant.project.name}.war" webxml="web/WEB-INF/web.xml">
+			<fileset dir="web">
+				<exclude name="**/src/**"/>
+				<exclude name="**/*.jar"/>
+			</fileset>
+			<manifest>
+				<attribute name="Built" value="${build.TODAY} by ${user.name}"/>
+				<attribute name="Build-OS" value="${os.name} ${os.version}"/>
+				<attribute name="Build-Java" value="Java ${java.version}"/>
+			</manifest>
+		</war>		
+    </target>
+
+	<target name="install" depends="war">
+		<delete dir="${red5.dir}/webapps/${ant.project.name}"/>
+		<copy file="${dist.dir}/${ant.project.name}.war" todir="${red5.dir}/webapps">
+		</copy>
+	</target>
+</project>
