@@ -10,12 +10,14 @@
     <property name="java.home" value="${env.JDK_HOME}"/>
     <property name="src.dir" value="src"/>
     <property name="lib.dir" value="lib"/>
+    <property name="lib.runtime.dir" value="web/WEB-INF/lib"/>
     <property name="classes.dir" value="web/WEB-INF/classes"/>
     <property name="dist.dir" value="dist"/>
     <property name="red5.dir" value="/Users/viola/Workspaces/osp/red5/dist"/>
 	
     <path id="project.classpath">
         <fileset dir="${lib.dir}"/>
+        <fileset dir="${lib.runtime.dir}"/>
     </path>
     
     <target name="clean">
@@ -36,7 +38,6 @@
 		<war destfile="${dist.dir}/${ant.project.name}.war" webxml="web/WEB-INF/web.xml">
 			<fileset dir="web">
 				<exclude name="**/src/**"/>
-				<exclude name="**/*.jar"/>
 			</fileset>
 			<manifest>
 				<attribute name="Built" value="${build.TODAY} by ${user.name}"/>

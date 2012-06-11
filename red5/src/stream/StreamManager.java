@@ -1,5 +1,6 @@
 package stream;
 
+import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,22 +59,38 @@ public class StreamManager {
 		logger.info("Saved as " + filename);
 	}
 
+	private File getFile(String filename) {
+		String webAppRoot = System.getProperty("red5.webapp.root");
+		StringBuilder b = new StringBuilder(webAppRoot);
+		b.append('/');
+		b.append(app.getName());
+		b.append('/');
+		b.append(filename);
+		File file = new File(b.toString());
+		return file;
+	}
+
 	public void publishRecording() {
 		IConnection conn = Red5.getConnectionLocal();
-		ClientBroadcastStream stream = (ClientBroadcastStream) app
-				.getBroadcastStream(conn.getScope(), "blabla");
 		String filename = (String) conn.getAttribute("filename");
 		logger.info("publish recording show for: "
 				+ conn.getScope().getContextPath() + " " + filename);
+		try {
+			Publisher.publish(getFile(filename));
+			logger.info("published recording show for: "
+					+ conn.getScope().getContextPath() + " " + filename);
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "Error while publishing: " + filename, e);
+		}
 	}
 
 	public void deleteRecording() {
 		IConnection conn = Red5.getConnectionLocal();
-		ClientBroadcastStream stream = (ClientBroadcastStream) app
-				.getBroadcastStream(conn.getScope(), "blabla");
 		String filename = (String) conn.getAttribute("filename");
 		logger.info("delete recording show for: "
 				+ conn.getScope().getContextPath() + " " + filename);
+		File file = getFile(filename);
+		file.delete();
 	}
 
 	/* ----- Spring injected dependencies ----- */
