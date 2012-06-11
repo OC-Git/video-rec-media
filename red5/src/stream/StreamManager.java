@@ -76,7 +76,11 @@ public class StreamManager {
 		logger.info("publish recording show for: "
 				+ conn.getScope().getContextPath() + " " + filename);
 		try {
-			Publisher.publish(getFile(filename));
+			String title = conn.getStringAttribute("title");
+			String page = conn.getStringAttribute("page");
+			String category = conn.getStringAttribute("category");
+			String description = conn.getStringAttribute("description");
+			Publisher.publish(getFile(filename), title, category, description);
 			logger.info("published recording show for: "
 					+ conn.getScope().getContextPath() + " " + filename);
 		} catch (Exception e) {

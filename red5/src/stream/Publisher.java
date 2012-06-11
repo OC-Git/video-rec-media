@@ -19,16 +19,8 @@ public class Publisher {
 	private static final Logger logger = Logger.getLogger(Publisher.class
 			.getName());
 
-	public static void main(String[] args) {
-		File file = new File("/Users/viola/Desktop/1339404332723.flv");
-		try {
-			publish(file);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static void publish(File file) throws Exception {
+	public static void publish(File file, String title, String category,
+			String description) throws Exception {
 		logger.info("Publishing to Youtube: " + file.getAbsolutePath());
 		String clientID = "lean-video-recording";
 		String developer_key = "AI39si642bz59kjhdF7sZOLDlCL2BjQT8_c9mtdBLRhvv8CB4KP8TApMj7Q94AOYhIBS5jfLENomZ0fuOywEKzrBk3Aqw2bdDQ";
@@ -40,13 +32,13 @@ public class Publisher {
 
 		YouTubeMediaGroup mg = newEntry.getOrCreateMediaGroup();
 		mg.setTitle(new MediaTitle());
-		mg.getTitle().setPlainTextContent("Another Recorded Video");
+		mg.getTitle().setPlainTextContent(title);
 		mg.addCategory(new MediaCategory(YouTubeNamespace.CATEGORY_SCHEME,
-				"Autos"));
+				category));
 		mg.setKeywords(new MediaKeywords());
 		mg.getKeywords().addKeyword("recording");
 		mg.setDescription(new MediaDescription());
-		mg.getDescription().setPlainTextContent("My description");
+		mg.getDescription().setPlainTextContent(description);
 		mg.setPrivate(false);
 		mg.addCategory(new MediaCategory(YouTubeNamespace.DEVELOPER_TAG_SCHEME,
 				"recording"));

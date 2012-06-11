@@ -24,6 +24,22 @@ public class Application extends ApplicationAdapter {
 		return true;
 	}
 
+	@Override
+	public boolean appConnect(IConnection conn, Object[] params) {
+		if (params.length != 4) {
+			log.info("videorec appConnect illegal param count");
+			rejectClient("Illegal param count");
+			return false;
+		}
+		conn.setAttribute("page", params[0]);
+		conn.setAttribute("title", params[1]);
+		conn.setAttribute("category", params[2]);
+		conn.setAttribute("description", params[3]);
+		log.info("videorec appConnect: " + params[0] + " " + params[1] + " "
+				+ params[2] + " " + params[3]);
+		return super.appConnect(conn, params);
+	}
+
 	/** {@inheritDoc} */
 	@Override
 	public void appDisconnect(IConnection conn) {
