@@ -44,7 +44,8 @@
 							recording = false;
 							
                             connection = new NetConnection();
-                            connection.connect(param.rtmp, param.ticket);
+                            connection.connect(param.rtmp, 
+                              param.page, param.title, param.category, param.description);
                             connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
 
 			                t = new Timer(1000);
