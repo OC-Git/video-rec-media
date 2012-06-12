@@ -100,10 +100,10 @@ public class TicketManager {
 	}
 
 	public TicketManager() {
-		client = new Client66();
+		client = new AppClient();
 	}
 
-	private Client66 client;
+	private AppClient client;
 	Map<String, Ticket> tickets = new HashMap<String, Ticket>();
 
 	public boolean allocateForPlayback(String name, String key) {

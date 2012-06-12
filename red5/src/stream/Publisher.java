@@ -19,7 +19,7 @@ public class Publisher {
 	private static final Logger logger = Logger.getLogger(Publisher.class
 			.getName());
 
-	public static void publish(File file, String title, String category,
+	public static String publish(File file, String title, String category,
 			String description) throws Exception {
 		logger.info("Publishing to Youtube: " + file.getAbsolutePath());
 		String clientID = "lean-video-recording";
@@ -53,6 +53,7 @@ public class Publisher {
 		String uploadUrl = "http://uploads.gdata.youtube.com/feeds/api/users/default/uploads";
 
 		VideoEntry createdEntry = service.insert(new URL(uploadUrl), newEntry);
+		return createdEntry.getId();
 	}
 
 }
