@@ -19,6 +19,8 @@
                         import mx.events.FlexEvent;
 						import mx.events.CloseEvent;
                         import mx.controls.Alert;
+                        import flash.external.*;
+                        
                         private var connection:NetConnection;
                         private var video:Video;
                         private var stream:NetStream;
@@ -45,7 +47,8 @@
 							
                             connection = new NetConnection();
                             connection.connect(param.rtmp, 
-                              param.page, param.title, param.category, param.description);
+                              param.client, param.page, param.title, param.category, 
+                              param.description);
                             connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
 
 			                t = new Timer(1000);
@@ -168,13 +171,27 @@
 					      {
 					        if (event.detail == Alert.YES)
 					        {
-					          connection.call("streamManager.publishRecording", null);
+					          var responder:Responder = new Responder(publishComplete, publishFail);
+					          connection.call("streamManager.publishRecording", responder);
 					        }
 					        else
 					        {
 					          connection.call("streamManager.deleteRecording", null);
+							  ExternalInterface.call("publishCancelled");
 					        }
 					      }    
+
+						private function publishComplete(results:Object):void {
+							if (!ExternalInterface.available)
+								Alert.show("Wrapper not there", "Sorry", Alert.OK);
+							
+							ExternalInterface.call("publishComplete");
+				        }
+				        
+				        private function publishFail(results:Object):void {
+							Alert.show("Could not publish", "Sorry", Alert.OK);
+				        }
+        
 						
                 ]]>
         </mx:Script>
