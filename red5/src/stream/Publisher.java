@@ -53,7 +53,9 @@ public class Publisher {
 		String uploadUrl = "http://uploads.gdata.youtube.com/feeds/api/users/default/uploads";
 
 		VideoEntry createdEntry = service.insert(new URL(uploadUrl), newEntry);
-		return createdEntry.getId();
+		// tag:youtube.com,2008:video:9yCGrfG9vRk
+		String id = createdEntry.getId();
+		return id.substring(id.lastIndexOf(':') + 1);
 	}
 
 }
