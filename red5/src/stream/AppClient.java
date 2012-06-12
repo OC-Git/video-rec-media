@@ -73,7 +73,7 @@ public class AppClient {
 		params.put("page", page);
 		params.put("category", category);
 		params.put("description", description);
-		params.put("id", id);
+		params.put("publishedId", id);
 		int result = post("/" + client + "/published", params);
 		if (result != OK)
 			log.log(Level.SEVERE, "published call status: " + result);
