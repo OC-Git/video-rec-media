@@ -46,9 +46,10 @@
 							recording = false;
 							
                             connection = new NetConnection();
-                            connection.connect(param.rtmp, 
+                            connection.connect(param.rtmp,
+                              param.name, 
                               param.client, param.page, param.title, param.category, 
-                              param.description);
+                              param.description, param.key);
                             connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
 
 			                t = new Timer(1000);
@@ -74,7 +75,7 @@
 						}
 
 						private function connectionSuccess():void {
-                            video = new Video(param.width, param.height);
+                            video = new Video(320, 240);
                             
                             // create camera
                             camera = Camera.getCamera();
