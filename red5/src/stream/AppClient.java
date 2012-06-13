@@ -67,13 +67,14 @@ public class AppClient {
 	}
 
 	public void published(String client, String title, String page,
-			String category, String description, String id) {
+			String category, String description, String id, String key) {
 		Map<String, String> params = new HashMap<String, String>();
 		params.put("title", title);
 		params.put("page", page);
 		params.put("category", category);
 		params.put("description", description);
 		params.put("publishedId", id);
+		params.put("key", key);
 		int result = post("/" + client + "/published", params);
 		if (result != OK)
 			log.log(Level.SEVERE, "published call status: " + result);

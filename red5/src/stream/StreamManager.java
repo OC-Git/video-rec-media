@@ -28,13 +28,14 @@ public class StreamManager {
 	public void recordShow() {
 		IConnection conn = Red5.getConnectionLocal();
 		logger.finer("Recording show for: " + conn.getScope().getContextPath());
-		String streamName = String.valueOf(System.currentTimeMillis());
+		String fileName = String.valueOf(System.currentTimeMillis());
+		String streamName = conn.getStringAttribute("stream");
 		// Get a reference to the current broadcast stream.
 		IBroadcastStream stream = app.getBroadcastStream(conn.getScope(),
-				"blabla");
+				streamName);
 		try {
 			// Save the stream to disk.
-			stream.saveAs(streamName, false);
+			stream.saveAs(fileName, false);
 		} catch (Exception e) {
 			logger.log(Level.SEVERE,
 					"Error while saving stream: " + streamName, e);
@@ -50,8 +51,9 @@ public class StreamManager {
 		logger.finer("Stop recording show for: "
 				+ conn.getScope().getContextPath());
 		// Get a reference to the current broadcast stream.
+		String streamName = conn.getStringAttribute("stream");
 		ClientBroadcastStream stream = (ClientBroadcastStream) app
-				.getBroadcastStream(conn.getScope(), "blabla");
+				.getBroadcastStream(conn.getScope(), streamName);
 		// Stop recording.
 		String filename = stream.getSaveFilename();
 		conn.setAttribute("filename", filename);
@@ -81,10 +83,11 @@ public class StreamManager {
 			String page = conn.getStringAttribute("page");
 			String category = conn.getStringAttribute("category");
 			String description = conn.getStringAttribute("description");
+			String key = conn.getStringAttribute("key");
 			String id = Publisher.publish(getFile(filename), title, category,
 					description);
 			new AppClient().published(client, title, page, category,
-					description, id);
+					description, id, key);
 			logger.info("published recording show for: "
 					+ conn.getScope().getContextPath() + " " + filename);
 		} catch (Exception e) {
