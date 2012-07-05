@@ -10,6 +10,36 @@
 	    	#bandwidth {
 	    		color: #ffffff;
 	    	}
+	    	.big {
+				font-size: 150px;
+				color: #FFFFFF;
+	    	}
+			.button {
+				-moz-box-shadow:inset 0px 0px 0px 0px #ffffff;
+				-webkit-box-shadow:inset 0px 0px 0px 0px #ffffff;
+				box-shadow:inset 0px 0px 0px 0px #ffffff;
+				background-color:#ededed;
+				-moz-border-radius:6px;
+				-webkit-border-radius:6px;
+				border-radius:6px;
+				border:1px solid #dcdcdc;
+				display:inline-block;
+				color:#787878;
+				font-family:arial;
+				font-size:16px;
+				padding:6px 24px;
+				height: 30px;
+				width: 400px;
+				text-decoration:none;
+				text-shadow:1px 1px 0px #ffffff;
+			}
+			.button:hover {
+				background-color:#dfdfdf;
+			}
+			.button:active {
+				position:relative;
+				top:1px;
+			}	    	
 	    </mx:Style>
 
         <mx:Script>
@@ -20,7 +50,9 @@
 						import mx.events.CloseEvent;
                         import mx.controls.Alert;
                         import flash.external.*;
-                        
+                        import mx.managers.PopUpManager;
+  						import mx.containers.Panel;
+  						
                         private var connection:NetConnection;
                         private var video:Video;
                         private var stream:NetStream;
@@ -33,11 +65,11 @@
 						private var seconds:int=0;
 						private var secondsMax:int=60;
 
-						[Embed("assets/red_ball.png")]
-			            public var redBall:Class;
-
-						[Embed("assets/gray_ball.png")]
-			            public var grayBall:Class;
+						private var startRecord:Canvas;
+						private var countdown:int;
+						private var countdownLabel:Label;
+						private var countdownTimer:Timer;
+						private var stopRecord:Canvas;
 
 
                         protected function application1_creationCompleteHandler(event:FlexEvent):void
@@ -101,14 +133,10 @@
                         }
 
                         private function onConsumeStream(event:NetStatusEvent) : void {
-			                switch( event.info.code ) {
-			                    case "NetStream.Failed":
-			                        connectionFailed("Ihr Ticket ist nicht gültig.");
-			                    break;
-			                    default:
-			                        trace( "netStatusHandler:code: " + event.info.code );
-			                    break;
-			                }
+                        	if (event.info.code=="NetStream.Play.Stop") {
+								PopUpManager.addPopUp(stopRecord,this,true);
+								PopUpManager.centerPopUp(stopRecord); 
+                        	}
 						}
 
                         private function onPublishStream(event:NetStatusEvent) : void {
@@ -127,12 +155,6 @@
 							Alert.show(s, "Fehler", Alert.OK);
 						}
 			
-						private function setButtonStyle(c:Class):void {
-		                	recordButton.setStyle("upSkin", c);
-		                	recordButton.setStyle("overSkin", c);
-		                	recordButton.setStyle("downSkin", c);
-						}
-			
 			            private function updateTimer(evt:TimerEvent):void {
 			            	var txt:String = "";
 
@@ -140,12 +162,6 @@
 			            		txt += String(int(stream.info.currentBytesPerSecond/1024)+" KB/s");
 			            		
 			                if (recording) {
-			                	txt += " Recording";
-			                	if (recordButton.getStyle("upSkin")==grayBall) {
-				                	setButtonStyle(redBall);
-				                } else {
-				                	setButtonStyle(grayBall);
-				                }
 			                	progress.setProgress(seconds,secondsMax);
 			                	seconds++;
 				                if (seconds>secondsMax)
@@ -157,16 +173,96 @@
 						private function recordClicked():void {
 							if (recording) {
 								connection.call("streamManager.stopRecordingShow", null);	
-			                	setButtonStyle(redBall);
 			                	progress.setProgress(0,100);
 			                	seconds = 0;
-			                	Alert.show( "Would you like publish your video?", "Publish?", 
-      								Alert.YES | Alert.NO, this, closeHandler, null, Alert.YES );
+								recordButton.label = "Aufnahme";
+								stopRecord = new Canvas();
+								stopRecord.width = 240;
+                				stopRecord.height = 180;
+								stopRecord.setStyle("backgroundAlpha", 0.1);
+								var preview:Button = new Button();
+								preview.label = "Aufnahme ansehen?";
+								preview.left = 0;
+								preview.top = 0;
+								preview.styleName = "button";
+								preview.addEventListener(MouseEvent.CLICK, previewClicked);
+								stopRecord.addChild(preview);
+								var rerecord:Button = new Button();
+								rerecord.label = "Neue Aufnahme?";
+								rerecord.left = 0;
+								rerecord.top = 30;
+								rerecord.styleName = "button";
+								rerecord.addEventListener(MouseEvent.CLICK, rerecordClicked);
+								stopRecord.addChild(rerecord);
+								var publish:Button = new Button();
+								publish.label = "Aufnahme veröffentlichen?";
+								publish.left = 0;
+								publish.top = 60;
+								publish.styleName = "button";
+								publish.addEventListener(MouseEvent.CLICK, publishClicked);
+								stopRecord.addChild(publish);
+								PopUpManager.addPopUp(stopRecord,this,true);
+								PopUpManager.centerPopUp(stopRecord); 
 							} else {
-								connection.call("streamManager.recordShow", null);
+								countdown = 3;
+								startRecord = new Canvas();
+								startRecord.width = 400;
+                				startRecord.height = 250;
+								startRecord.setStyle("backgroundAlpha", 0.1);
+								countdownLabel = new Label();
+								countdownLabel.styleName = "big";
+								countdownLabel.text = "3";
+								countdownLabel.left = 120;
+								countdownLabel.top = 0;
+								startRecord.addChild(countdownLabel);
+								PopUpManager.addPopUp(startRecord,this,true);
+								PopUpManager.centerPopUp(startRecord); 
+				                countdownTimer = new Timer(1000);
+				                countdownTimer.addEventListener(TimerEvent.TIMER, countdownListener);
+				                countdownTimer.start();
 							}
 							recording = !recording;
 						}
+						
+						private function rerecordClicked(event:Event):void {
+    				        connection.call("streamManager.deleteRecording", null);
+							PopUpManager.removePopUp(stopRecord);
+                            // create the netstream
+                            stream = new NetStream(connection);
+                        	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
+                            stream.attachCamera(camera);
+							stream.attachAudio(mic);
+                            stream.publish(param.name);
+
+                            video.attachCamera(camera);
+							recordClicked(); 
+						}
+						
+						private function previewClicked(event:Event):void {
+							PopUpManager.removePopUp(stopRecord);
+                            stream = new NetStream(connection);
+                        	stream.addEventListener(NetStatusEvent.NET_STATUS, onConsumeStream);
+                        	stream.play(param.name);
+                        	video.attachNetStream(stream);
+						}
+						
+						private function publishClicked(event:Event):void {
+  				            var responder:Responder = new Responder(publishComplete, publishFail);
+				            connection.call("streamManager.publishRecording", responder);
+							PopUpManager.removePopUp(stopRecord);
+						}
+						
+			            private function countdownListener(evt:TimerEvent):void {
+			            	countdown = countdown-1;
+			            	if (countdown==0) {
+			            		countdownTimer.stop();
+								recordButton.label = "Beenden";
+								PopUpManager.removePopUp(startRecord); 
+								connection.call("streamManager.recordShow", null);
+			            	} else {
+				            	countdownLabel.text = ""+countdown;
+				            }
+				        }
 						
 						private function closeHandler(event:CloseEvent):void
 					      {
@@ -190,7 +286,7 @@
 				        }
 				        
 				        private function publishFail(results:Object):void {
-							Alert.show("Could not publish", "Sorry", Alert.OK);
+							Alert.show("Veröffentlichung gescheitert.", "Sorry", Alert.OK);
 				        }
         
 						
@@ -203,15 +299,12 @@
 		        paddingBottom="3" 
 		        paddingLeft="10" 
 		        paddingRight="10">
-	        	<mx:Button id="recordButton"
-	        		upSkin="@Embed(source='assets/red_ball.png')" 
-	        		overSkin="@Embed(source='assets/red_ball.png')" 
-	        		downSkin="@Embed(source='assets/red_ball.png')" 
-	        		toolTip="Start and stop recording"
+	        	<mx:Button id="recordButton" toggle="true"
+	        		label="Aufnahme"
 	        		click="recordClicked()"
 	        	/>
 				<mx:ProgressBar width="150" mode="manual" minimum="0" maximum="100" id="progress"/>
-		        <mx:Label x="2" y="2" text="Label" id="bandwidth"/>
+		        <mx:Label x="2" y="2" text="" id="bandwidth"/>
 		    </mx:HBox> 
 	    </mx:Box> 
 </mx:Application>

@@ -35,7 +35,7 @@ public class StreamManager {
 				streamName);
 		try {
 			// Save the stream to disk.
-			stream.saveAs(fileName, false);
+			stream.saveAs(streamName, false);
 		} catch (Exception e) {
 			logger.log(Level.SEVERE,
 					"Error while saving stream: " + streamName, e);
