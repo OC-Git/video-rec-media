@@ -11,7 +11,7 @@
 	    		color: #ffffff;
 	    	}
 	    	.big {
-				font-size: 150px;
+				font-size: 120px;
 				color: #FFFFFF;
 	    	}
 			.button {
@@ -22,9 +22,9 @@
 				-moz-border-radius:6px;
 				-webkit-border-radius:6px;
 				border-radius:6px;
-				border:1px solid #dcdcdc;
+				border:0px solid #dcdcdc;
 				display:inline-block;
-				color:#787878;
+				color:#444444;
 				font-family:arial;
 				font-size:16px;
 				padding:6px 24px;
@@ -65,11 +65,13 @@
 						private var seconds:int=0;
 						private var secondsMax:int=60;
 
-						private var startRecord:Canvas;
+						private var countdownCanvas:Canvas;
 						private var countdown:int;
 						private var countdownLabel:Label;
 						private var countdownTimer:Timer;
+						private var startRecord:Canvas;
 						private var stopRecord:Canvas;
+						private var stopRecordLabel:Label;
 
 
                         protected function application1_creationCompleteHandler(event:FlexEvent):void
@@ -130,6 +132,9 @@
                             ui.addChild(video);
                             ui.move(0,0);
                             vid.addChild(ui);
+
+							startRecord = createCanvas();
+							createButton(stopRecord, 30, "Aufnahme starten?", recordClicked);
                         }
 
                         private function onConsumeStream(event:NetStatusEvent) : void {
@@ -170,53 +175,53 @@
 			                bandwidth.text = txt;
 			            }
 			            
+			            private function createCanvas():Canvas {
+							var cvs:Canvas = new Canvas();
+							cvs.width = 250;
+            				cvs.height = 220;
+							cvs.setStyle("backgroundAlpha", 0.1);
+							return cvs;
+						}			            
+			            private function createButton(cvs:Canvas, y:int, label:String, clicked:Function):Button {
+							var button:Button = new Button();
+							button.label = label;
+							button.left = 0;
+							button.top = y;
+							button.percentWidth = 100;
+							button.styleName = "button";
+							button.addEventListener(MouseEvent.CLICK, clicked);
+							cvs.addChild(button);
+							return button;
+			            }
+			            
 						private function recordClicked():void {
 							if (recording) {
 								connection.call("streamManager.stopRecordingShow", null);	
 			                	progress.setProgress(0,100);
 			                	seconds = 0;
 								recordButton.label = "Aufnahme";
-								stopRecord = new Canvas();
-								stopRecord.width = 240;
-                				stopRecord.height = 180;
-								stopRecord.setStyle("backgroundAlpha", 0.1);
-								var preview:Button = new Button();
-								preview.label = "Aufnahme ansehen?";
-								preview.left = 0;
-								preview.top = 0;
-								preview.styleName = "button";
-								preview.addEventListener(MouseEvent.CLICK, previewClicked);
-								stopRecord.addChild(preview);
-								var rerecord:Button = new Button();
-								rerecord.label = "Neue Aufnahme?";
-								rerecord.left = 0;
-								rerecord.top = 30;
-								rerecord.styleName = "button";
-								rerecord.addEventListener(MouseEvent.CLICK, rerecordClicked);
-								stopRecord.addChild(rerecord);
-								var publish:Button = new Button();
-								publish.label = "Aufnahme veröffentlichen?";
-								publish.left = 0;
-								publish.top = 60;
-								publish.styleName = "button";
-								publish.addEventListener(MouseEvent.CLICK, publishClicked);
-								stopRecord.addChild(publish);
+								stopRecord = createCanvas();
+								createButton(stopRecord,  0, "Aufnahme ansehen?", previewClicked);
+								createButton(stopRecord, 30, "Neue Aufnahme?", rerecordClicked);
+								createButton(stopRecord, 60, "Aufnahme veröffentlichen?", publishClicked);
+								stopRecordLabel = new Label();
+								stopRecordLabel.text = "";
+								stopRecordLabel.left = 0;
+								stopRecordLabel.top = 90;
+								stopRecord.addChild(stopRecordLabel);
 								PopUpManager.addPopUp(stopRecord,this,true);
 								PopUpManager.centerPopUp(stopRecord); 
 							} else {
 								countdown = 3;
-								startRecord = new Canvas();
-								startRecord.width = 400;
-                				startRecord.height = 250;
-								startRecord.setStyle("backgroundAlpha", 0.1);
+								countdownCanvas = createCanvas();
 								countdownLabel = new Label();
 								countdownLabel.styleName = "big";
 								countdownLabel.text = "3";
-								countdownLabel.left = 120;
+								countdownLabel.left = 80;
 								countdownLabel.top = 0;
-								startRecord.addChild(countdownLabel);
-								PopUpManager.addPopUp(startRecord,this,true);
-								PopUpManager.centerPopUp(startRecord); 
+								countdownCanvas.addChild(countdownLabel);
+								PopUpManager.addPopUp(countdownCanvas,this,true);
+								PopUpManager.centerPopUp(countdownCanvas); 
 				                countdownTimer = new Timer(1000);
 				                countdownTimer.addEventListener(TimerEvent.TIMER, countdownListener);
 				                countdownTimer.start();
@@ -249,7 +254,8 @@
 						private function publishClicked(event:Event):void {
   				            var responder:Responder = new Responder(publishComplete, publishFail);
 				            connection.call("streamManager.publishRecording", responder);
-							PopUpManager.removePopUp(stopRecord);
+				            stopRecordLabel.text = "Veröffentlichung läuft, einen Moment bitte...";
+							// PopUpManager.removePopUp(stopRecord);
 						}
 						
 			            private function countdownListener(evt:TimerEvent):void {
@@ -257,7 +263,7 @@
 			            	if (countdown==0) {
 			            		countdownTimer.stop();
 								recordButton.label = "Beenden";
-								PopUpManager.removePopUp(startRecord); 
+								PopUpManager.removePopUp(countdownCanvas); 
 								connection.call("streamManager.recordShow", null);
 			            	} else {
 				            	countdownLabel.text = ""+countdown;
@@ -280,7 +286,7 @@
 
 						private function publishComplete(results:Object):void {
 							if (!ExternalInterface.available)
-								Alert.show("Wrapper not there", "Sorry", Alert.OK);
+								Alert.show("Wrapper not available", "Sorry", Alert.OK);
 							
 							ExternalInterface.call("publishComplete");
 				        }
