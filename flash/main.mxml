@@ -124,6 +124,7 @@
                             stream.attachCamera(camera);
 							stream.attachAudio(mic);
                             stream.publish(param.name);
+                            stream.bufferTime = 60;
 
                             video.attachCamera(camera);
 							                                
@@ -238,6 +239,7 @@
                             stream.attachCamera(camera);
 							stream.attachAudio(mic);
                             stream.publish(param.name);
+                            stream.bufferTime = 60;
 
                             video.attachCamera(camera);
 							recordClicked(); 
