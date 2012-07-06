@@ -285,6 +285,8 @@
 					      }    
 
 						private function publishComplete(results:Object):void {
+				            stopRecordLabel.text = "Ihre Aufnahme ist veröffentlicht.";
+
 							if (!ExternalInterface.available)
 								Alert.show("Wrapper not available", "Sorry", Alert.OK);
 							
