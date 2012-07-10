@@ -14,6 +14,10 @@
 				font-size: 120px;
 				color: #FFFFFF;
 	    	}
+	    	.msg {
+				font-size: 18px;
+				color: #000000;
+	    	}
 			.button {
 				-moz-box-shadow:inset 0px 0px 0px 0px #ffffff;
 				-webkit-box-shadow:inset 0px 0px 0px 0px #ffffff;
@@ -49,9 +53,12 @@
                         import mx.events.FlexEvent;
 						import mx.events.CloseEvent;
                         import mx.controls.Alert;
-                        import flash.external.*;
                         import mx.managers.PopUpManager;
   						import mx.containers.Panel;
+                        import flash.external.*;
+                        import flash.events.DataEvent;
+                        import flash.events.ProgressEvent;
+	                    import flash.net.FileReference;
   						
                         private var connection:NetConnection;
                         private var video:Video;
@@ -72,7 +79,9 @@
 						private var startRecord:Canvas;
 						private var stopRecord:Canvas;
 						private var stopRecordLabel:Label;
+						private var uploadLabel:Label;
 
+						private var file:FileReference;
 
                         protected function application1_creationCompleteHandler(event:FlexEvent):void
                         {
@@ -180,7 +189,7 @@
 							var cvs:Canvas = new Canvas();
 							cvs.width = 250;
             				cvs.height = 220;
-							cvs.setStyle("backgroundAlpha", 0.1);
+							cvs.setStyle("backgroundAlpha", 0.8);
 							return cvs;
 						}			            
 			            private function createButton(cvs:Canvas, y:int, label:String, clicked:Function):Button {
@@ -194,6 +203,14 @@
 							cvs.addChild(button);
 							return button;
 			            }
+			            private function createLabel(cvs:Canvas, x:int, y:int, msg:String):Label {
+							var label:Label = new Label();
+							label.text = msg;
+							label.left = x;
+							label.top = y;
+							cvs.addChild(label);
+							return label
+			            }
 			            
 						private function recordClicked():void {
 							if (recording) {
@@ -201,10 +218,12 @@
 			                	progress.setProgress(0,100);
 			                	seconds = 0;
 								recordButton.label = "Aufnahme";
+								uploadButton.enabled = true;
 								stopRecord = createCanvas();
-								createButton(stopRecord,  0, "Aufnahme ansehen?", previewClicked);
-								createButton(stopRecord, 30, "Neue Aufnahme?", rerecordClicked);
-								createButton(stopRecord, 60, "Aufnahme veröffentlichen?", publishClicked);
+								createButton(stopRecord,  0, "Aufnahme ansehen", previewClicked);
+								createButton(stopRecord, 30, "Neue Aufnahme", rerecordClicked);
+								createButton(stopRecord, 60, "Aufnahme veröffentlichen", publishClicked);
+								createButton(stopRecord, 90, "Video hochladen", doUploadClicked);
 								stopRecordLabel = new Label();
 								stopRecordLabel.text = "";
 								stopRecordLabel.left = 0;
@@ -215,12 +234,8 @@
 							} else {
 								countdown = 3;
 								countdownCanvas = createCanvas();
-								countdownLabel = new Label();
+								countdownLabel = createLabel(countdownCanvas, 80, 0, "3")
 								countdownLabel.styleName = "big";
-								countdownLabel.text = "3";
-								countdownLabel.left = 80;
-								countdownLabel.top = 0;
-								countdownCanvas.addChild(countdownLabel);
 								PopUpManager.addPopUp(countdownCanvas,this,true);
 								PopUpManager.centerPopUp(countdownCanvas); 
 				                countdownTimer = new Timer(1000);
@@ -264,6 +279,7 @@
 			            	countdown = countdown-1;
 			            	if (countdown==0) {
 			            		countdownTimer.stop();
+								uploadButton.enabled = false;
 								recordButton.label = "Beenden";
 								PopUpManager.removePopUp(countdownCanvas); 
 								connection.call("streamManager.recordShow", null);
@@ -298,8 +314,55 @@
 				        private function publishFail(results:Object):void {
 							Alert.show("Veröffentlichung gescheitert.", "Sorry", Alert.OK);
 				        }
-        
-						
+        				public function doUploadClicked(event:Event):void {
+							PopUpManager.removePopUp(stopRecord);
+							uploadClicked();
+						}
+						public function uploadClicked():void {
+							file = new FileReference();
+							file.addEventListener(Event.SELECT, fileSelected);
+							file.addEventListener( Event.COMPLETE, fileLoaded );
+							file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, fileUploaded);
+							file.browse([]);
+						}
+						public function fileProgress(event:ProgressEvent):void {
+		                	progress.setProgress(event.bytesLoaded,event.bytesTotal);
+		                	if (event.bytesLoaded==event.bytesTotal) {
+			                	uploadLabel.text = "Veröffentliche Video...";
+							}
+						}
+						public function fileSelected(event:Event):void {
+							ExternalInterface.call( "console.log" , "file selected");
+
+							var cvs:Canvas = createCanvas();
+							uploadLabel = createLabel(cvs, 0, 40, "Lade Video hoch...")
+							uploadLabel.styleName = "msg";
+							PopUpManager.addPopUp(cvs,this,true);
+							PopUpManager.centerPopUp(cvs); 
+							
+							var dest:URLRequest = new URLRequest(param.upload);
+							var params:URLVariables = new URLVariables();
+							params.title = param.title;
+							params.page = param.page;
+							params.key = param.key;
+							params.category = param.category;
+							params.description = param.description;
+							
+							dest.method = URLRequestMethod.POST;
+							dest.data = params;
+							file.addEventListener(ProgressEvent.PROGRESS, fileProgress);
+							file.upload(dest, "file");
+						}
+						public function fileLoaded(event:Event):void {
+							file.load();				
+						}
+						public function fileUploaded(event:Event):void {
+							file.removeEventListener( ProgressEvent.PROGRESS, fileProgress );
+							if (!ExternalInterface.available)
+								Alert.show("Wrapper not available", "Sorry", Alert.OK);
+							
+							ExternalInterface.call("publishComplete");
+						}
                 ]]>
         </mx:Script>
         <mx:Box x="0" y="0" width="100%" height="100%" verticalGap="0">
@@ -313,7 +376,11 @@
 	        		label="Aufnahme"
 	        		click="recordClicked()"
 	        	/>
-				<mx:ProgressBar width="150" mode="manual" minimum="0" maximum="100" id="progress"/>
+	        	<mx:Button id="uploadButton"
+	        		label="Hochladen"
+	        		click="uploadClicked()"
+	        	/>
+				<mx:ProgressBar width="100" mode="manual" minimum="0" maximum="100" id="progress"/>
 		        <mx:Label x="2" y="2" text="" id="bandwidth"/>
 		    </mx:HBox> 
 	    </mx:Box> 
