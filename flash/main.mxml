@@ -321,10 +321,15 @@
 						public function uploadClicked():void {
 							file = new FileReference();
 							file.addEventListener(Event.SELECT, fileSelected);
-							file.addEventListener( Event.COMPLETE, fileLoaded );
+							file.addEventListener(Event.COMPLETE, fileLoaded );
 							file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, fileUploaded);
+							file.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
 							file.browse([]);
 						}
+						private function securityErrorHandler(event:Event):void {
+					        var file:FileReference = FileReference(event.target);
+					        Alert.show("securityErrorHandler: name=" + file.name + " event=" + event.toString(), "Sorry", Alert.OK);
+						}						
 						public function fileProgress(event:ProgressEvent):void {
 		                	progress.setProgress(event.bytesLoaded,event.bytesTotal);
 		                	if (event.bytesLoaded==event.bytesTotal) {
@@ -332,7 +337,6 @@
 							}
 						}
 						public function fileSelected(event:Event):void {
-							ExternalInterface.call( "console.log" , "file selected");
 
 							var cvs:Canvas = createCanvas();
 							uploadLabel = createLabel(cvs, 0, 40, "Lade Video hoch...")
@@ -362,6 +366,7 @@
 						}
 						public function fileUploaded(event:DataEvent):void {
 							file.removeEventListener( ProgressEvent.PROGRESS, fileProgress );
+			                uploadLabel.text = "Video veröffentlicht!";
 							if (!ExternalInterface.available)
 								Alert.show("Wrapper not available", "Sorry", Alert.OK);
 							
