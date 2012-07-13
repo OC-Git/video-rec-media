@@ -15,8 +15,8 @@
 				color: #FFFFFF;
 	    	}
 	    	.msg {
-				font-size: 18px;
-				color: #000000;
+				font-size: 16px;
+				color: #444444;
 	    	}
 			.button {
 				-moz-box-shadow:inset 0px 0px 0px 0px #ffffff;
@@ -80,6 +80,10 @@
 						private var stopRecord:Canvas;
 						private var stopRecordLabel:Label;
 						private var uploadLabel:Label;
+
+         				private var bufferTimer:Timer;
+         				private var maxBufferLength:int;
+						private var bufferCanvas:Canvas;
 
 						private var file:FileReference;
 
@@ -214,23 +218,17 @@
 			            
 						private function recordClicked():void {
 							if (recording) {
-								connection.call("streamManager.stopRecordingShow", null);	
-			                	progress.setProgress(0,100);
-			                	seconds = 0;
-								recordButton.label = "Aufnahme";
-								uploadButton.enabled = true;
-								stopRecord = createCanvas();
-								createButton(stopRecord,  0, "Aufnahme ansehen", previewClicked);
-								createButton(stopRecord, 30, "Neue Aufnahme", rerecordClicked);
-								createButton(stopRecord, 60, "Aufnahme veröffentlichen", publishClicked);
-								createButton(stopRecord, 90, "Video hochladen", doUploadClicked);
-								stopRecordLabel = new Label();
-								stopRecordLabel.text = "";
-								stopRecordLabel.left = 0;
-								stopRecordLabel.top = 90;
-								stopRecord.addChild(stopRecordLabel);
-								PopUpManager.addPopUp(stopRecord,this,true);
-								PopUpManager.centerPopUp(stopRecord); 
+	                            stream.attachCamera(null);
+								stream.attachAudio(null);
+								maxBufferLength = stream.bufferLength;
+								bufferCanvas = createCanvas();
+								var bufferLabel:Label = createLabel(bufferCanvas, 80, 0, "Speichern...")
+								bufferLabel.styleName = "msg";
+								PopUpManager.addPopUp(bufferCanvas,this,true);
+								PopUpManager.centerPopUp(bufferCanvas); 
+				                bufferTimer = new Timer(1000);
+				                bufferTimer.addEventListener(TimerEvent.TIMER, handleBufferCheck);
+				                bufferTimer.start();
 							} else {
 								countdown = 3;
 								countdownCanvas = createCanvas();
@@ -245,9 +243,35 @@
 							recording = !recording;
 						}
 						
+						private function handleBufferCheck(e:TimerEvent):void {
+							progress.setProgress(stream.bufferLength*seconds/secondsMax, maxBufferLength);
+							if (stream.bufferLength==0) {
+								bufferTimer.reset();
+								PopUpManager.removePopUp(bufferCanvas);
+								connection.call("streamManager.stopRecordingShow", null);	
+			                	progress.setProgress(0,100);
+			                	seconds = 0;
+								recordButton.label = "Aufnahme";
+								uploadButton.enabled = true;
+								stopRecord = createCanvas();
+								createButton(stopRecord,  0, "Aufnahme ansehen", previewClicked);
+								createButton(stopRecord, 30, "Neue Aufnahme", rerecordClicked);
+								createButton(stopRecord, 60, "Aufnahme veröffentlichen", publishClicked);
+								createButton(stopRecord, 90, "Video hochladen", doUploadClicked);
+								stopRecordLabel = createLabel(countdownCanvas, 120, 0, "")
+								stopRecordLabel.styleName = "msg";
+								PopUpManager.addPopUp(stopRecord,this,true);
+								PopUpManager.centerPopUp(stopRecord); 
+							}
+						}
+						
 						private function rerecordClicked(event:Event):void {
     				        connection.call("streamManager.deleteRecording", null);
 							PopUpManager.removePopUp(stopRecord);
+							
+                        	video.attachNetStream(null);
+                            video.attachCamera(camera);
+
                             // create the netstream
                             stream = new NetStream(connection);
                         	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
@@ -256,7 +280,6 @@
                             stream.publish(param.name);
                             stream.bufferTime = 60;
 
-                            video.attachCamera(camera);
 							recordClicked(); 
 						}
 						
@@ -265,6 +288,8 @@
                             stream = new NetStream(connection);
                         	stream.addEventListener(NetStatusEvent.NET_STATUS, onConsumeStream);
                         	stream.play(param.name);
+
+                            video.attachCamera(null);
                         	video.attachNetStream(stream);
 						}
 						
@@ -298,17 +323,11 @@
 					        else
 					        {
 					          connection.call("streamManager.deleteRecording", null);
-							  ExternalInterface.call("publishCancelled");
 					        }
 					      }    
 
 						private function publishComplete(results:Object):void {
 				            stopRecordLabel.text = "Ihre Aufnahme ist veröffentlicht.";
-
-							if (!ExternalInterface.available)
-								Alert.show("Wrapper not available", "Sorry", Alert.OK);
-							
-							ExternalInterface.call("publishComplete");
 				        }
 				        
 				        private function publishFail(results:Object):void {
@@ -367,10 +386,6 @@
 						public function fileUploaded(event:DataEvent):void {
 							file.removeEventListener( ProgressEvent.PROGRESS, fileProgress );
 			                uploadLabel.text = "Video veröffentlicht!";
-							if (!ExternalInterface.available)
-								Alert.show("Wrapper not available", "Sorry", Alert.OK);
-							
-							ExternalInterface.call("publishComplete");
 						}
                 ]]>
         </mx:Script>
