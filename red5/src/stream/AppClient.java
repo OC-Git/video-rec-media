@@ -1,15 +1,23 @@
 package stream;
 
-import java.io.DataOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.ContentBody;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreProtocolPNames;
 
 public class AppClient {
 	private static final Logger log = Logger.getLogger(AppClient.class
@@ -24,46 +32,35 @@ public class AppClient {
 			base = "http://localhost:9000";
 	}
 
-	private int post(String uri, Map<String, String> params) {
+	private int post(String uri, Map<String, String> params, File file) {
 		try {
 			log.info(base + uri);
-			URL u = new URL(base + uri);
-			HttpURLConnection connection = (HttpURLConnection) u
-					.openConnection();
-			connection.setDoInput(true);
-			connection.setDoOutput(true);
-			connection.setRequestMethod("POST");
+			HttpClient httpclient = new DefaultHttpClient();
+			httpclient.getParams().setParameter(
+					CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
 
-			DataOutputStream wr = new DataOutputStream(
-					connection.getOutputStream());
-			wr.writeBytes(getParamString(params));
-			wr.flush();
-			wr.close();
+			HttpPost httppost = new HttpPost(base + uri);
 
-			connection.getInputStream();
-			int responseCode = connection.getResponseCode();
-			connection.disconnect();
-			return responseCode;
+			MultipartEntity mpEntity = new MultipartEntity();
+			if (file != null) {
+				ContentBody cbFile = new FileBody(file, "video/flv");
+				mpEntity.addPart("file", cbFile);
+			}
+			Charset utf8 = Charset.forName("UTF-8");
+			for (Entry<String, String> entry : params.entrySet()) {
+				mpEntity.addPart(entry.getKey(),
+						new StringBody(entry.getValue(), utf8));
+			}
+
+			httppost.setEntity(mpEntity);
+			HttpResponse response = httpclient.execute(httppost);
+			int statusCode = response.getStatusLine().getStatusCode();
+			httpclient.getConnectionManager().shutdown();
+			return statusCode;
 		} catch (Exception e) {
 			log.log(Level.SEVERE, base + uri + ": " + e.getMessage());
 			return 0;
 		}
-	}
-
-	private String getParamString(Map<String, String> params) {
-		StringBuilder b = new StringBuilder();
-		for (Entry<String, String> entry : params.entrySet()) {
-			if (b.length() > 0)
-				b.append("&");
-			b.append(entry.getKey());
-			b.append("=");
-			try {
-				b.append(URLEncoder.encode(entry.getValue(), "UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
-		}
-		return b.toString();
 	}
 
 	public void published(String client, String title, String page,
@@ -75,7 +72,21 @@ public class AppClient {
 		params.put("description", description);
 		params.put("publishedId", id);
 		params.put("key", key);
-		int result = post("/" + client + "/published", params);
+		int result = post("/" + client + "/published", params, null);
+		if (result != OK)
+			log.log(Level.SEVERE, "published call status: " + result);
+	}
+
+	public void upload(File file, String client, String title, String page,
+			String category, String description, String key) {
+		Map<String, String> params = new HashMap<String, String>();
+		params.put("title", title);
+		params.put("page", page);
+		params.put("category", category);
+		params.put("description", description);
+		params.put("publishedId", "");
+		params.put("key", key);
+		int result = post("/" + client + "/upload", params, file);
 		if (result != OK)
 			log.log(Level.SEVERE, "published call status: " + result);
 	}

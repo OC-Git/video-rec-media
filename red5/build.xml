@@ -13,7 +13,7 @@
     <property name="lib.runtime.dir" value="web/WEB-INF/lib"/>
     <property name="classes.dir" value="web/WEB-INF/classes"/>
     <property name="dist.dir" value="dist"/>
-    <property name="red5.dir" value="/Users/viola/Workspaces/osp/red5/dist"/>
+    <property name="red5.dir" value="/Users/viola/Workspaces/66and33/66and33-media/red5/dist/red5/red5/dist"/>
 	
     <path id="project.classpath">
         <fileset dir="${lib.dir}"/>

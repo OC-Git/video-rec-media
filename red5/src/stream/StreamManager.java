@@ -84,10 +84,12 @@ public class StreamManager {
 			String category = conn.getStringAttribute("category");
 			String description = conn.getStringAttribute("description");
 			String key = conn.getStringAttribute("key");
-			String id = Publisher.publish(getFile(filename), title, category,
-					description);
-			new AppClient().published(client, title, page, category,
-					description, id, key);
+			// String id = Publisher.publish(getFile(filename), title, category,
+			// description);
+			// new AppClient().published(client, title, page, category,
+			// description, id, key);
+			new AppClient().upload(getFile(filename), client, title, page,
+					category, description, key);
 			logger.info("published recording show for: "
 					+ conn.getScope().getContextPath() + " " + filename);
 		} catch (Exception e) {

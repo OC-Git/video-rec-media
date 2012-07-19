@@ -10,5 +10,9 @@
 	<classpathentry kind="lib" path="web/WEB-INF/lib/guava-11.0.2.jar"/>
 	<classpathentry kind="lib" path="/Users/viola/Workspaces/osp/red5/lib/javaee-api-5.1.2.jar"/>
 	<classpathentry kind="lib" path="lib/red5.jar"/>
+	<classpathentry kind="lib" path="web/WEB-INF/lib/httpclient-4.2.1.jar"/>
+	<classpathentry kind="lib" path="web/WEB-INF/lib/httpcore-4.2.1.jar"/>
+	<classpathentry kind="lib" path="web/WEB-INF/lib/commons-codec-1.6.jar"/>
+	<classpathentry kind="lib" path="web/WEB-INF/lib/httpmime-4.2.1.jar"/>
 	<classpathentry kind="output" path="web/WEB-INF/classes"/>
 </classpath>
