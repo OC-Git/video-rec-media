@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
         width="640" height="480" layout="absolute"
-        creationComplete="application1_creationCompleteHandler(event)">
+        creationComplete="creationCompleteHandler(event)">
 
 	    <mx:Style>
 	    	#box {
@@ -18,32 +18,6 @@
 				font-size: 16px;
 				color: #444444;
 	    	}
-			.button {
-				-moz-box-shadow:inset 0px 0px 0px 0px #ffffff;
-				-webkit-box-shadow:inset 0px 0px 0px 0px #ffffff;
-				box-shadow:inset 0px 0px 0px 0px #ffffff;
-				background-color:#ededed;
-				-moz-border-radius:6px;
-				-webkit-border-radius:6px;
-				border-radius:6px;
-				border:0px solid #dcdcdc;
-				display:inline-block;
-				color:#444444;
-				font-family:arial;
-				font-size:16px;
-				padding:6px 24px;
-				height: 30px;
-				width: 400px;
-				text-decoration:none;
-				text-shadow:1px 1px 0px #ffffff;
-			}
-			.button:hover {
-				background-color:#dfdfdf;
-			}
-			.button:active {
-				position:relative;
-				top:1px;
-			}	    	
 	    </mx:Style>
 
         <mx:Script>
@@ -87,27 +61,38 @@
 
 						private var file:FileReference;
 
-                        protected function application1_creationCompleteHandler(event:FlexEvent):void
+                        protected function creationCompleteHandler(event:FlexEvent):void
                         {
 							param = FlexGlobals.topLevelApplication.parameters;
 							recording = false;
-							
-                            connection = new NetConnection();
-                            connection.connect(param.rtmp,
-                              param.name, 
-                              param.client, param.page, param.title, param.category, 
-                              param.description, param.key);
-                            connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
 
+                        }
+
+                        private function startTimer() : void {
+                        	seconds = 0;
 			                t = new Timer(1000);
 			                t.addEventListener(TimerEvent.TIMER, updateTimer);
 			                t.start();
                         }
                         
+                        private function connect() : void {
+                        	if (connection!=null) {
+                        		startRecording();
+                        		return;
+                        	}
+                            connection = new NetConnection();
+                            connection.client = this;
+                            connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
+                            connection.connect(param.rtmp,
+                              param.name, 
+                              param.client, param.page, param.title, param.category, 
+                              param.description, param.key);
+                        }
+                        
                         private function onConnected(event:NetStatusEvent) : void {
 			                switch( event.info.code ) {
 			                    case "NetConnection.Connect.Success":
-			                        connectionSuccess();
+			                        startRecording();
 			                    break;
 			                    case "NetConnection.Connect.Failed":
 			                        connectionFailed("Verbindung nicht erfolgreich");
@@ -116,46 +101,9 @@
 			                        connectionFailed("Verbindung nicht erlaubt");
 			                    break;
 			                    default:
-			                        trace( "netStatusHandler:code: " + event.info.code );
+			                        connectionFailed("Unbekannter Verbindungsfehler: " + event.info.code );
 			                    break;
 			                }
-						}
-
-						private function connectionSuccess():void {
-                            video = new Video(320, 240);
-                            
-                            // create camera
-                            camera = Camera.getCamera();
-							camera.setMode(param.width, param.height, param.fps);
-                            camera.setQuality(param.bandwidth, param.quality);
-
-							mic = Microphone.getMicrophone();
-                            
-                            // create the netstream
-                            stream = new NetStream(connection);
-                        	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
-                            stream.attachCamera(camera);
-							stream.attachAudio(mic);
-                            stream.publish(param.name);
-                            stream.bufferTime = 60;
-
-                            video.attachCamera(camera);
-							                                
-                            // wrap video
-                            var ui:UIComponent = new UIComponent();
-                            ui.addChild(video);
-                            ui.move(0,0);
-                            vid.addChild(ui);
-
-							startRecord = createCanvas();
-							createButton(stopRecord, 30, "Aufnahme starten?", recordClicked);
-                        }
-
-                        private function onConsumeStream(event:NetStatusEvent) : void {
-                        	if (event.info.code=="NetStream.Play.Stop") {
-								PopUpManager.addPopUp(stopRecord,this,true);
-								PopUpManager.centerPopUp(stopRecord); 
-                        	}
 						}
 
                         private function onPublishStream(event:NetStatusEvent) : void {
@@ -175,17 +123,18 @@
 						}
 			
 			            private function updateTimer(evt:TimerEvent):void {
+			            	if (stream==null)
+			            		return;
+			            
 			            	var txt:String = "";
 
 			            	if (stream!=null)
 			            		txt += String(int(stream.info.currentBytesPerSecond/1024)+" KB/s");
 			            		
-			                if (recording) {
-			                	progress.setProgress(seconds,secondsMax);
-			                	seconds++;
-				                if (seconds>secondsMax)
-				                	recordClicked();
-			                }
+		                	progress.setProgress(seconds,secondsMax);
+		                	seconds++;
+			                if (seconds>secondsMax)
+			                	stop();
 			                bandwidth.text = txt;
 			            }
 			            
@@ -215,34 +164,122 @@
 							cvs.addChild(label);
 							return label
 			            }
-			            
-						private function recordClicked():void {
-							if (recording) {
-	                            stream.attachCamera(null);
-								stream.attachAudio(null);
-								maxBufferLength = stream.bufferLength;
-								bufferCanvas = createCanvas();
-								var bufferLabel:Label = createLabel(bufferCanvas, 80, 0, "Speichern...")
-								bufferLabel.styleName = "msg";
-								PopUpManager.addPopUp(bufferCanvas,this,true);
-								PopUpManager.centerPopUp(bufferCanvas); 
-				                bufferTimer = new Timer(1000);
-				                bufferTimer.addEventListener(TimerEvent.TIMER, handleBufferCheck);
-				                bufferTimer.start();
-							} else {
-								countdown = 3;
-								countdownCanvas = createCanvas();
-								countdownLabel = createLabel(countdownCanvas, 80, 0, "3")
-								countdownLabel.styleName = "big";
-								PopUpManager.addPopUp(countdownCanvas,this,true);
-								PopUpManager.centerPopUp(countdownCanvas); 
-				                countdownTimer = new Timer(1000);
-				                countdownTimer.addEventListener(TimerEvent.TIMER, countdownListener);
-				                countdownTimer.start();
+
+						public function record():void {
+							stack.selectedChild = cam;
+							connect();
+						}							
+						
+						private function createCam():void {
+							if (camera!=null) {
+								camIsOn();
+								return;
 							}
-							recording = !recording;
+                            // create camera
+                            camera = Camera.getCamera();
+                            camera.addEventListener(StatusEvent.STATUS, cameraStatusHandler);
+							camera.setMode(param.width, param.height, param.fps);
+                            camera.setQuality(param.bandwidth, param.quality);
+
+							mic = Microphone.getMicrophone();
+						}							
+
+						private function cameraStatusHandler(event:StatusEvent):void
+						{
+						    switch (event.code)
+						    {
+						        case "Camera.Muted":
+						            trace("User clicked Deny.");
+						            break;
+						        case "Camera.Unmuted":
+						            camIsOn();
+						            break;
+						    }
+						}						
+						private function createStream():void {
+							if (stream!=null)
+								return;
+                            // create the netstream
+                            stream = new NetStream(connection);
+                            stream.client = this;
+                        	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
+                            stream.publish(param.name);
+                            stream.bufferTime = 60;
+						}			
+
+						public function onMetaData(infoObject:Object):void {
+						}
+						 
+						public function onCuePoint(infoObject:Object):void {
+						}										
+						public function onBWDone(...rest):void
+						{
+						    var p_bw:Number;
+						    if (rest.length > 0){
+						        p_bw = rest[0];
+						    }
+						    trace("bandwidth = " + p_bw + " Kbps.");
+						}
+						private function createVideo():void {
+                            video = new Video(320, 240);
+                            var ui:UIComponent = new UIComponent();
+                            ui.addChild(video);
+                            ui.move(0,0);
+                            vid.addChild(ui);
 						}
 						
+						private function startRecording():void {
+							createCam();
+							createStream();
+							createVideo();
+                        	video.attachNetStream(null);
+                            video.attachCamera(camera);
+						}
+						private function camIsOn():void {
+							startCountdown();	
+						}							
+
+						private function startCountdown():void {
+							countdown = 6;
+							countdownCanvas = createCanvas();
+							countdownLabel = createLabel(countdownCanvas, 90, 20, "")
+							countdownLabel.styleName = "big";
+							PopUpManager.addPopUp(countdownCanvas,this,true);
+							PopUpManager.centerPopUp(countdownCanvas); 
+			                countdownTimer = new Timer(1000);
+			                countdownTimer.addEventListener(TimerEvent.TIMER, countdownListener);
+			                countdownTimer.start();
+						}
+						
+			            private function countdownListener(evt:TimerEvent):void {
+			            	countdown = countdown-1;
+			            	if (countdown==0) {
+			            		countdownTimer.stop();
+								PopUpManager.removePopUp(countdownCanvas); 
+	                            stream.attachCamera(camera);
+								stream.attachAudio(mic);
+								connection.call("streamManager.recordShow", null);
+								startTimer();
+			            	} else {
+				            	countdownLabel.text = ""+countdown;
+				            }
+				        }
+
+						private function stop():void {
+							t.reset();
+                            stream.attachCamera(null);
+							stream.attachAudio(null);
+							maxBufferLength = stream.bufferLength;
+							bufferCanvas = createCanvas();
+							var bufferLabel:Label = createLabel(bufferCanvas, 80, 0, "Speichern...")
+							bufferLabel.styleName = "msg";
+							PopUpManager.addPopUp(bufferCanvas,this,true);
+							PopUpManager.centerPopUp(bufferCanvas); 
+			                bufferTimer = new Timer(1000);
+			                bufferTimer.addEventListener(TimerEvent.TIMER, handleBufferCheck);
+			                bufferTimer.start();
+			            }
+
 						private function handleBufferCheck(e:TimerEvent):void {
 							progress.setProgress(stream.bufferLength*seconds/secondsMax, maxBufferLength);
 							if (stream.bufferLength==0) {
@@ -251,40 +288,15 @@
 								connection.call("streamManager.stopRecordingShow", null);	
 			                	progress.setProgress(0,100);
 			                	seconds = 0;
-								recordButton.label = "Aufnahme";
-								uploadButton.enabled = true;
-								stopRecord = createCanvas();
-								createButton(stopRecord,  0, "Aufnahme ansehen", previewClicked);
-								createButton(stopRecord, 30, "Neue Aufnahme", rerecordClicked);
-								createButton(stopRecord, 60, "Aufnahme veröffentlichen", publishClicked);
-								createButton(stopRecord, 90, "Video hochladen", doUploadClicked);
-								stopRecordLabel = createLabel(countdownCanvas, 120, 0, "")
-								stopRecordLabel.styleName = "msg";
-								PopUpManager.addPopUp(stopRecord,this,true);
-								PopUpManager.centerPopUp(stopRecord); 
+								playButton.enabled = true;
+								publishButton.enabled = true;
+								stack.selectedChild = dialog;
 							}
 						}
 						
-						private function rerecordClicked(event:Event):void {
-    				        connection.call("streamManager.deleteRecording", null);
-							PopUpManager.removePopUp(stopRecord);
-							
-                        	video.attachNetStream(null);
-                            video.attachCamera(camera);
-
-                            // create the netstream
-                            stream = new NetStream(connection);
-                        	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
-                            stream.attachCamera(camera);
-							stream.attachAudio(mic);
-                            stream.publish(param.name);
-                            stream.bufferTime = 60;
-
-							recordClicked(); 
-						}
-						
 						private function previewClicked(event:Event):void {
-							PopUpManager.removePopUp(stopRecord);
+							stack.selectedChild = cam;
+							
                             stream = new NetStream(connection);
                         	stream.addEventListener(NetStatusEvent.NET_STATUS, onConsumeStream);
                         	stream.play(param.name);
@@ -292,6 +304,14 @@
                             video.attachCamera(null);
                         	video.attachNetStream(stream);
 						}
+
+                        private function onConsumeStream(event:NetStatusEvent) : void {
+                        	if (event.info.code=="NetStream.Play.Stop") {
+								stack.selectedChild = dialog;
+								stream = null;
+                        	}
+						}
+
 						
 						private function publishClicked(event:Event):void {
   				            var responder:Responder = new Responder(publishComplete, publishFail);
@@ -299,19 +319,6 @@
 				            stopRecordLabel.text = "Veröffentlichung läuft, einen Moment bitte...";
 							// PopUpManager.removePopUp(stopRecord);
 						}
-						
-			            private function countdownListener(evt:TimerEvent):void {
-			            	countdown = countdown-1;
-			            	if (countdown==0) {
-			            		countdownTimer.stop();
-								uploadButton.enabled = false;
-								recordButton.label = "Beenden";
-								PopUpManager.removePopUp(countdownCanvas); 
-								connection.call("streamManager.recordShow", null);
-			            	} else {
-				            	countdownLabel.text = ""+countdown;
-				            }
-				        }
 						
 						private function closeHandler(event:CloseEvent):void
 					      {
@@ -389,23 +396,48 @@
 						}
                 ]]>
         </mx:Script>
-        <mx:Box x="0" y="0" width="100%" height="100%" verticalGap="0">
-	        <mx:Canvas id="vid" x="0" y="0" width="320" height="240"/>
-	        <mx:HBox id="box" width="100%" height="26"
-		        paddingTop="3" 
-		        paddingBottom="3" 
-		        paddingLeft="10" 
-		        paddingRight="10">
-	        	<mx:Button id="recordButton" toggle="true"
-	        		label="Aufnahme"
-	        		click="recordClicked()"
-	        	/>
-	        	<mx:Button id="uploadButton"
-	        		label="Hochladen"
-	        		click="uploadClicked()"
-	        	/>
-				<mx:ProgressBar width="100" mode="manual" minimum="0" maximum="100" id="progress"/>
-		        <mx:Label x="2" y="2" text="" id="bandwidth"/>
-		    </mx:HBox> 
-	    </mx:Box> 
+        <mx:ViewStack id="stack" width="100%" height="100%">
+        	<mx:Grid id="dialog" width="100%" height="100%">
+                <mx:GridRow>
+                    <mx:GridItem>
+                        <mx:Button id="recordButton" label="Aufnahme" width="156"
+                        		icon="@Embed(source='assets/record_icon.png')" 
+                        		labelPlacement="bottom"
+                        		click="record();"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <mx:Button id="playButton" label="Wiedergabe" width="156" enabled="false"
+                        		icon="@Embed(source='assets/play_icon.png')" 
+                        		labelPlacement="bottom"
+                        		click="previewClicked(event);"/>
+                    </mx:GridItem>
+                </mx:GridRow>
+                <mx:GridRow >
+                    <mx:GridItem>
+                        <mx:Button id="uploadButton" label="Hochladen" width="100%"
+                        		icon="@Embed(source='assets/upload_icon.png')" 
+                        		labelPlacement="bottom"
+                        		click="uploadClicked();"/>
+                    </mx:GridItem>
+                    <mx:GridItem>
+                        <mx:Button id="publishButton" label="Freigeben" width="100%" enabled="false"
+                        		icon="@Embed(source='assets/publish_icon.png')" 
+                        		labelPlacement="bottom"
+                        		click="publishClicked(event);"/>
+                        		
+                    </mx:GridItem>
+                </mx:GridRow>
+        	</mx:Grid> 
+	        <mx:Box id="cam" x="0" y="0" width="100%" height="100%" verticalGap="0">
+		        <mx:Canvas id="vid" x="0" y="0" width="320" height="240" click="stop();"/>
+		        <mx:HBox id="box" width="100%" height="26"
+			        paddingTop="3" 
+			        paddingBottom="3" 
+			        paddingLeft="10" 
+			        paddingRight="10">
+					<mx:ProgressBar width="200" mode="manual" minimum="0" maximum="100" id="progress"/>
+			        <mx:Label x="2" y="2" text="" id="bandwidth"/>
+			    </mx:HBox> 
+		    </mx:Box> 
+		  </mx:ViewStack>
 </mx:Application>
