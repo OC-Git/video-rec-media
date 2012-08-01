@@ -68,14 +68,12 @@
 							recording = false;
 
                         }
-
-                        private function startTimer() : void {
-                        	seconds = 0;
-			                t = new Timer(1000);
-			                t.addEventListener(TimerEvent.TIMER, updateTimer);
-			                t.start();
-                        }
                         
+						public function record():void {
+							stack.selectedChild = cam;
+							connect();
+						}							
+						
                         private function connect() : void {
                         	if (connection!=null) {
                         		startRecording();
@@ -107,38 +105,10 @@
 			                }
 						}
 
-                        private function onPublishStream(event:NetStatusEvent) : void {
-			                switch( event.info.code ) {
-			                    case "NetStream.Failed":
-			                        connectionFailed("Ihr Ticket ist nicht gültig.");
-			                    break;
-			                    default:
-			                        trace( "netStatusHandler:code: " + event.info.code );
-			                    break;
-			                }
-						}
-
-
 						private function connectionFailed(s:String):void {
 							Alert.show(s, "Fehler", Alert.OK);
 						}
 			
-			            private function updateTimer(evt:TimerEvent):void {
-			            	if (stream==null)
-			            		return;
-			            
-			            	var txt:String = "";
-
-			            	if (stream!=null)
-			            		txt += String(int(stream.info.currentBytesPerSecond/1024)+" KB/s");
-			            		
-		                	progress.setProgress(seconds,secondsMax);
-		                	seconds++;
-			                if (seconds>secondsMax)
-			                	stop();
-			                bandwidth.text = txt;
-			            }
-			            
 			            private function createCanvas():Canvas {
 							var cvs:Canvas = new Canvas();
 							cvs.width = 250;
@@ -166,11 +136,6 @@
 							return label
 			            }
 
-						public function record():void {
-							stack.selectedChild = cam;
-							connect();
-						}							
-						
 						private function createCam():void {
 							if (camera!=null) {
 								camIsOn();
@@ -204,15 +169,27 @@
                             stream = new NetStream(connection);
                             stream.client = this;
                         	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
-                            stream.publish(param.name);
                             stream.bufferTime = 60;
 						}			
+
+
+                        private function onPublishStream(event:NetStatusEvent) : void {
+			                switch( event.info.code ) {
+			                    case "NetStream.Failed":
+			                        connectionFailed("Ihr Ticket ist nicht gültig.");
+			                    break;
+			                    default:
+			                        trace( "netStatusHandler:code: " + event.info.code );
+			                    break;
+			                }
+						}
 
 						public function onMetaData(infoObject:Object):void {
 						}
 						 
 						public function onCuePoint(infoObject:Object):void {
-						}										
+						}		
+														
 						public function onBWDone(...rest):void
 						{
 						    var p_bw:Number;
@@ -221,6 +198,7 @@
 						    }
 						    trace("bandwidth = " + p_bw + " Kbps.");
 						}
+						
 						private function createVideo():void {
                             video = new Video(320, 240);
                             var ui:UIComponent = new UIComponent();
@@ -231,13 +209,17 @@
 						
 						private function startRecording():void {
 							createCam();
-							createStream();
 							createVideo();
                         	video.attachNetStream(null);
                             video.attachCamera(camera);
 						}
+						
 						private function camIsOn():void {
 							startCountdown();	
+							createStream();
+                            stream.attachCamera(camera);
+							stream.attachAudio(mic);
+                            stream.publish(param.name);
 						}							
 
 						private function startCountdown():void {
@@ -257,14 +239,35 @@
 			            	if (countdown==0) {
 			            		countdownTimer.stop();
 								PopUpManager.removePopUp(countdownCanvas); 
-	                            stream.attachCamera(camera);
-								stream.attachAudio(mic);
 								connection.call("streamManager.recordShow", null);
 								startTimer();
 			            	} else {
 				            	countdownLabel.text = ""+countdown;
 				            }
 				        }
+
+                        private function startTimer() : void {
+                        	seconds = 0;
+			                t = new Timer(1000);
+			                t.addEventListener(TimerEvent.TIMER, updateTimer);
+			                t.start();
+                        }
+
+			            private function updateTimer(evt:TimerEvent):void {
+			            	if (stream==null)
+			            		return;
+			            
+			            	var txt:String = "";
+
+			            	if (stream!=null)
+			            		txt += String(int(stream.info.currentBytesPerSecond/1024)+" KB/s");
+			            		
+		                	progress.setProgress(seconds,secondsMax);
+		                	seconds++;
+			                if (seconds>secondsMax)
+			                	stop();
+			                bandwidth.text = txt;
+			            }
 
 						private function stop():void {
 							t.reset();
