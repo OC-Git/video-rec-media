@@ -1,10 +1,14 @@
 package stream;
 
+import java.io.File;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.red5.server.adapter.ApplicationAdapter;
 import org.red5.server.api.IConnection;
+import org.red5.server.api.Red5;
 import org.red5.server.api.scope.IScope;
+import org.red5.server.api.stream.IBroadcastStream;
 
 public class Application extends ApplicationAdapter {
 
@@ -43,5 +47,21 @@ public class Application extends ApplicationAdapter {
 	public void appDisconnect(IConnection conn) {
 		log.info("videorec appDisconnect");
 		super.appDisconnect(conn);
+	}
+
+	@Override
+	public void streamPublishStart(IBroadcastStream stream) {
+		super.streamPublishStart(stream);
+		try {
+			log.info("videorec start saving");
+			// Das ist ein ClientBroadcastStream
+			String name = stream.getPublishedName();
+			stream.saveAs(name, false);
+			String filename = stream.getSaveFilename();
+			IConnection conn = Red5.getConnectionLocal();
+			conn.setAttribute("filename", filename);
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "on stream record", e);
+		}
 	}
 }
