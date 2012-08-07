@@ -169,7 +169,7 @@
                             stream = new NetStream(connection);
                             stream.client = this;
                         	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
-                            stream.bufferTime = 60;
+							stream.publish(param.name);
 						}			
 
 
@@ -208,6 +208,7 @@
 						}
 						
 						private function startRecording():void {
+							createStream();
 							createCam();
 							createVideo();
                         	video.attachNetStream(null);
@@ -216,10 +217,6 @@
 						
 						private function camIsOn():void {
 							startCountdown();	
-							createStream();
-                            stream.attachCamera(camera);
-							stream.attachAudio(mic);
-                            stream.publish(param.name);
 						}							
 
 						private function startCountdown():void {
@@ -239,7 +236,10 @@
 			            	if (countdown==0) {
 			            		countdownTimer.stop();
 								PopUpManager.removePopUp(countdownCanvas); 
-								connection.call("streamManager.recordShow", null);
+	                            // stream.bufferTime = 60;
+	                            stream.attachCamera(camera);
+								stream.attachAudio(mic);
+								// connection.call("streamManager.recordShow", null);
 								startTimer();
 			            	} else {
 				            	countdownLabel.text = ""+countdown;
@@ -270,7 +270,7 @@
 			            }
 
 						private function stop():void {
-							t.reset();
+							stream.pause();
                             stream.attachCamera(null);
 							stream.attachAudio(null);
 							maxBufferLength = stream.bufferLength;
@@ -287,12 +287,14 @@
 							progBar.setProgress(maxBufferLength-stream.bufferLength, maxBufferLength);
 							if (stream.bufferLength==0) {
 								bufferTimer.reset();
-								connection.call("streamManager.stopRecordingShow", null);	
+								t.reset();
+								// connection.call("streamManager.stopRecordingShow", null);	
 			                	progress.setProgress(0,100);
 			                	seconds = 0;
 								playButton.enabled = true;
 								publishButton.enabled = true;
 								stack.selectedChild = dialog;
+								stream.close();
 							}
 						}
 						
