@@ -43,7 +43,6 @@
          				private var t:Timer;
          				                        
 						private var param:Object;
-						private var recording:Boolean;
 						private var seconds:int=0;
 						private var secondsMax:int=60;
 
@@ -65,7 +64,6 @@
                         protected function creationCompleteHandler(event:FlexEvent):void
                         {
 							param = FlexGlobals.topLevelApplication.parameters;
-							recording = false;
 
                         }
                         
@@ -169,7 +167,6 @@
                             stream = new NetStream(connection);
                             stream.client = this;
                         	stream.addEventListener(NetStatusEvent.NET_STATUS, onPublishStream);
-							stream.publish(param.name);
 						}			
 
 
@@ -190,13 +187,8 @@
 						public function onCuePoint(infoObject:Object):void {
 						}		
 														
-						public function onBWDone(...rest):void
+						public function onBWDone():void
 						{
-						    var p_bw:Number;
-						    if (rest.length > 0){
-						        p_bw = rest[0];
-						    }
-						    trace("bandwidth = " + p_bw + " Kbps.");
 						}
 						
 						private function createVideo():void {
@@ -208,16 +200,43 @@
 						}
 						
 						private function startRecording():void {
-							createStream();
 							createCam();
 							createVideo();
+							createStream();
                         	video.attachNetStream(null);
                             video.attachCamera(camera);
 						}
 						
+						private function startStream():void {
+                            
+                            stream.close();
+                            stream.publish(param.name, "record");
+                            
+		            		// countdownTimer.stop();
+							// PopUpManager.removePopUp(countdownCanvas); 
+                            // stream.bufferTime = 60;
+							// connection.call("streamManager.recordShow", null);
+							startTimer();
+						}
+
 						private function camIsOn():void {
-							startCountdown();	
+							// startCountdown();
+							// startStream();
+							recordButton.enabled = true;
+							stream.attachAudio(mic);
+                            stream.attachCamera(camera);
+							// recordClicked();	
 						}							
+
+						private function recordClicked():void {
+							if (recordButton.label=="Aufnahme") {
+								startStream();
+								recordButton.label = "Stop";
+							} else {
+								stop();
+								recordButton.label = "Aufnahme";
+							}
+						}
 
 						private function startCountdown():void {
 							countdown = 6;
@@ -234,13 +253,7 @@
 			            private function countdownListener(evt:TimerEvent):void {
 			            	countdown = countdown-1;
 			            	if (countdown==0) {
-			            		countdownTimer.stop();
-								PopUpManager.removePopUp(countdownCanvas); 
-	                            // stream.bufferTime = 60;
-	                            stream.attachCamera(camera);
-								stream.attachAudio(mic);
-								// connection.call("streamManager.recordShow", null);
-								startTimer();
+			            		startStream();
 			            	} else {
 				            	countdownLabel.text = ""+countdown;
 				            }
@@ -402,7 +415,7 @@
         	<mx:Grid id="dialog" width="100%" height="100%">
                 <mx:GridRow>
                     <mx:GridItem>
-                        <mx:Button id="recordButton" label="Aufnahme" width="156"
+                        <mx:Button label="Aufnahme" width="156"
                         		icon="@Embed(source='assets/record_icon.png')" 
                         		labelPlacement="bottom"
                         		click="record();"/>
@@ -443,7 +456,11 @@
 			        paddingBottom="3" 
 			        paddingLeft="10" 
 			        paddingRight="10">
-					<mx:ProgressBar width="200" mode="manual" label=""
+		        	<mx:Button id="recordButton" toggle="true" enabled="false"
+		        		label="Aufnahme"
+		        		click="recordClicked()"
+		        	/>
+					<mx:ProgressBar width="150" mode="manual" label=""
 					    minimum="0" maximum="100" id="progress"/>
 			        <mx:Label x="2" y="2" text="" id="bandwidth"/>
 			    </mx:HBox> 
