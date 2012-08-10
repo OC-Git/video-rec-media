@@ -210,7 +210,7 @@
 						private function startStream():void {
                             
                             stream.close();
-                            stream.publish(param.name, "record");
+                            stream.publish(param.name);
                             
 		            		// countdownTimer.stop();
 							// PopUpManager.removePopUp(countdownCanvas); 
@@ -353,6 +353,7 @@
 
 						private function publishComplete(results:Object):void {
 			                progLabel.text = "Video veröffentlicht!";
+			                progBar.visible = false;
 				        }
 				        
 				        private function publishFail(results:Object):void {
