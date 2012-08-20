@@ -64,7 +64,6 @@
                         protected function creationCompleteHandler(event:FlexEvent):void
                         {
 							param = FlexGlobals.topLevelApplication.parameters;
-
                         }
                         
 						public function record():void {
@@ -146,6 +145,8 @@
                             camera.setQuality(param.bandwidth, param.quality);
 
 							mic = Microphone.getMicrophone();
+							mic.setSilenceLevel(param.silenceLevel);
+							mic.rate = param.micRate;
 						}							
 
 						private function cameraStatusHandler(event:StatusEvent):void
@@ -205,6 +206,9 @@
 							createStream();
                         	video.attachNetStream(null);
                             video.attachCamera(camera);
+                            stream.attachCamera(camera);
+							stream.attachAudio(mic);
+							recordButton.enabled = true;
 						}
 						
 						private function startStream():void {
@@ -222,9 +226,6 @@
 						private function camIsOn():void {
 							// startCountdown();
 							// startStream();
-							recordButton.enabled = true;
-							stream.attachAudio(mic);
-                            stream.attachCamera(camera);
 							// recordClicked();	
 						}							
 
