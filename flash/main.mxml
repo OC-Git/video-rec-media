@@ -60,11 +60,19 @@
 						private var bufferCanvas:Canvas;
 
 						private var file:FileReference;
+						private var notYetPublished:Boolean;
 
                         protected function creationCompleteHandler(event:FlexEvent):void
                         {
 							param = FlexGlobals.topLevelApplication.parameters;
+							notYetPublished = false;
+			                ExternalInterface.addCallback("publishRequired", publishRequired);
+			                Security.allowDomain("*");
                         }
+
+						public function publishRequired():Boolean {
+							return notYetPublished;
+						}
                         
 						public function record():void {
 							stack.selectedChild = cam;
@@ -79,12 +87,17 @@
                             connection = new NetConnection();
                             connection.client = this;
                             connection.addEventListener(NetStatusEvent.NET_STATUS, onConnected);
+							connection.addEventListener(AsyncErrorEvent.ASYNC_ERROR, asyncErrorHandler);
                             connection.connect(param.rtmp,
                               param.name, 
                               param.client, param.page, param.title, param.category, 
                               param.description, param.key);
                         }
                         
+						public function asyncErrorHandler(event:AsyncErrorEvent):void 
+						{
+						}
+
                         private function onConnected(event:NetStatusEvent) : void {
 			                switch( event.info.code ) {
 			                    case "NetConnection.Connect.Success":
@@ -209,6 +222,7 @@
                             stream.attachCamera(camera);
 							stream.attachAudio(mic);
 							recordButton.enabled = true;
+							notYetPublished = true;
 						}
 						
 						private function startStream():void {
@@ -355,6 +369,7 @@
 						private function publishComplete(results:Object):void {
 			                progLabel.text = "Video veröffentlicht!";
 			                progBar.visible = false;
+							notYetPublished = false;
 				        }
 				        
 				        private function publishFail(results:Object):void {
