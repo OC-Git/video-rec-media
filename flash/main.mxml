@@ -66,8 +66,8 @@
                         {
 							param = FlexGlobals.topLevelApplication.parameters;
 							notYetPublished = false;
-			                ExternalInterface.addCallback("publishRequired", publishRequired);
-			                Security.allowDomain("*");
+			                // Security.allowDomain("*");
+			                // ExternalInterface.addCallback("publishRequired", publishRequired);
                         }
 
 						public function publishRequired():Boolean {
