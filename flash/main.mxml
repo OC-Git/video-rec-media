@@ -44,7 +44,6 @@
          				                        
 						private var param:Object;
 						private var seconds:int=0;
-						private var secondsMax:int=60;
 
 						private var countdownCanvas:Canvas;
 						private var countdown:int;
@@ -290,9 +289,9 @@
 			            	if (stream!=null)
 			            		txt += String(int(stream.info.currentBytesPerSecond/1024)+" KB/s");
 			            		
-		                	progress.setProgress(seconds,secondsMax);
+		                	progress.setProgress(seconds,param.secondsMax);
 		                	seconds++;
-			                if (seconds>secondsMax)
+			                if (seconds>param.secondsMax)
 			                	stop();
 			                bandwidth.text = txt;
 			            }
