@@ -26,16 +26,21 @@ public class Handler {
 			int id = node.get("id").asInt();
 			String token = node.get("token").asText();
 			log.info("Reserved id: " + id + ", token=" + token);
+			S3 s3 = new S3();
 			File converted = original;
 			if (convert) {
+				String originalKey = client + "/" + id + ".original."
+						+ Converter.getExtension(original);
+				s3.upload(originalKey, original);
+				log.info("Uploaded original to S3: " + originalKey);
+
 				converted = Converter.convert(original);
 				log.info("Converted file: " + converted);
 			}
-			S3 s3 = new S3();
 			String filename = "converted." + Converter.getExtension(converted);
-			String s3key = client + "/" + id + "." + filename;
-			s3.upload(s3key, converted);
-			log.info("Uploaded to S3: " + s3key);
+			String convertedKey = client + "/" + id + "." + filename;
+			s3.upload(convertedKey, converted);
+			log.info("Uploaded converted to S3: " + convertedKey);
 			String publishedId = "";
 			if (token != null && token.length() > 0) {
 				publishedId = Publisher.publish(converted, title, category,
