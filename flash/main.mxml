@@ -65,8 +65,9 @@
                         {
 							param = FlexGlobals.topLevelApplication.parameters;
 							notYetPublished = false;
-			                // Security.allowDomain("*");
+			                Security.allowDomain("*");
 			                // ExternalInterface.addCallback("publishRequired", publishRequired);
+			                Security.loadPolicyFile(param.upload+"/../crossdomain.xml");
                         }
 
 						public function publishRequired():Boolean {
@@ -382,7 +383,6 @@
 							file = new FileReference();
 							file.addEventListener(Event.SELECT, fileSelected);
 							file.addEventListener(Event.COMPLETE, fileLoaded );
-							file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, fileUploaded);
 							file.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
 							file.browse([]);
 						}
@@ -397,6 +397,7 @@
 							
 							var dest:URLRequest = new URLRequest(param.upload);
 							var params:URLVariables = new URLVariables();
+							params.client = param.client;
 							params.title = param.title;
 							params.page = param.page;
 							params.key = param.key;
@@ -407,16 +408,16 @@
 							dest.data = params;
 							file.addEventListener(ProgressEvent.PROGRESS, fileProgress);
 							file.addEventListener(IOErrorEvent.IO_ERROR, uploadError);
+							file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, fileUploaded);
 							file.upload(dest, "file");
 						}
 						public function fileLoaded(event:Event):void {
 							file.load();				
+			                progLabel.text = "Video veröffentlicht!";
+			                progBar.visible = false;
 						}
 						public function fileProgress(event:ProgressEvent):void {
 		                	progBar.setProgress(event.bytesLoaded,event.bytesTotal);
-		                	if (event.bytesLoaded==event.bytesTotal) {
-			                	progLabel.text = "Veröffentliche Video...";
-							}
 						}
 						public function uploadError(event:IOErrorEvent):void {
 							Alert.show(event.text, "Sorry", Alert.OK);
@@ -424,6 +425,8 @@
 						public function fileUploaded(event:DataEvent):void {
 							file.removeEventListener( ProgressEvent.PROGRESS, fileProgress );
 			                progLabel.text = "Video veröffentlicht!";
+			                progBar.visible = false;
+			                
 						}
                 ]]>
         </mx:Script>
