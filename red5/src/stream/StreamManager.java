@@ -9,6 +9,8 @@ import org.red5.server.api.Red5;
 import org.red5.server.api.stream.IBroadcastStream;
 import org.red5.server.stream.ClientBroadcastStream;
 
+import video.Handler;
+
 /**
  * <code>StreamManager</code> provides services for recording the broadcast
  * stream.
@@ -88,7 +90,9 @@ public class StreamManager {
 			// description);
 			// new AppClient().published(client, title, page, category,
 			// description, id, key);
-			new AppClient().upload(getFile(filename), client, title, page,
+			// new AppClient().upload(getFile(filename), client, title, page,
+			// category, description, key);
+			Handler.handle(getFile(filename), false, client, title, page,
 					category, description, key);
 			logger.info("published recording show for: "
 					+ conn.getScope().getContextPath() + " " + filename);

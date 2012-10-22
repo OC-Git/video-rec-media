@@ -32,6 +32,12 @@
 		<load-on-startup>1</load-on-startup>
 	</servlet>
 	
+   	<servlet>
+		<servlet-name>upload</servlet-name>
+		<servlet-class>video.Upload</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	
 	<servlet-mapping>
 		<servlet-name>rtmpt</servlet-name>
 		<url-pattern>/fcs/*</url-pattern>
@@ -57,6 +63,11 @@
 		<url-pattern>/idle/*</url-pattern>
 	</servlet-mapping>
 	
+	<servlet-mapping>
+		<servlet-name>upload</servlet-name>
+		<url-pattern>/upload</url-pattern>
+	</servlet-mapping>
+
     <security-constraint>
         <web-resource-collection>
             <web-resource-name>Forbidden</web-resource-name>

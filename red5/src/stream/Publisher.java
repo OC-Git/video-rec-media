@@ -20,13 +20,12 @@ public class Publisher {
 			.getName());
 
 	public static String publish(File file, String title, String category,
-			String description) throws Exception {
+			String description, String accessToken) throws Exception {
 		logger.info("Publishing to Youtube: " + file.getAbsolutePath());
 		String clientID = "lean-video-recording";
 		String developer_key = "AI39si642bz59kjhdF7sZOLDlCL2BjQT8_c9mtdBLRhvv8CB4KP8TApMj7Q94AOYhIBS5jfLENomZ0fuOywEKzrBk3Aqw2bdDQ";
 		YouTubeService service = new YouTubeService(clientID, developer_key);
-		service.setUserCredentials("joerg.viola@gmail.com",
-				"yDYf8PfWczURuKUPiuliUjPjZXO3uLIVP");
+		service.setAuthSubToken(accessToken);
 
 		VideoEntry newEntry = new VideoEntry();
 
