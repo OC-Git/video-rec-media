@@ -2,6 +2,7 @@ package stream;
 
 import java.io.File;
 import java.net.URL;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.gdata.client.youtube.YouTubeService;
@@ -20,7 +21,7 @@ public class Publisher {
 			.getName());
 
 	public static String publish(File file, String title, String category,
-			String description, String accessToken) throws Exception {
+			String description, String accessToken) {
 		logger.info("Publishing to Youtube: " + file.getAbsolutePath());
 		String clientID = "lean-video-recording";
 		String developer_key = "AI39si642bz59kjhdF7sZOLDlCL2BjQT8_c9mtdBLRhvv8CB4KP8TApMj7Q94AOYhIBS5jfLENomZ0fuOywEKzrBk3Aqw2bdDQ";
@@ -31,13 +32,13 @@ public class Publisher {
 
 		YouTubeMediaGroup mg = newEntry.getOrCreateMediaGroup();
 		mg.setTitle(new MediaTitle());
-		mg.getTitle().setPlainTextContent(title);
+		mg.getTitle().setPlainTextContent(conv(title));
 		mg.addCategory(new MediaCategory(YouTubeNamespace.CATEGORY_SCHEME,
 				"People"));
 		mg.setKeywords(new MediaKeywords());
-		mg.getKeywords().addKeyword(category);
+		mg.getKeywords().addKeyword(conv(category));
 		mg.setDescription(new MediaDescription());
-		mg.getDescription().setPlainTextContent(description);
+		mg.getDescription().setPlainTextContent(conv(description));
 		mg.setPrivate(false);
 		mg.addCategory(new MediaCategory(YouTubeNamespace.DEVELOPER_TAG_SCHEME,
 				category));
@@ -51,10 +52,26 @@ public class Publisher {
 
 		String uploadUrl = "http://uploads.gdata.youtube.com/feeds/api/users/default/uploads";
 
-		VideoEntry createdEntry = service.insert(new URL(uploadUrl), newEntry);
-		// tag:youtube.com,2008:video:9yCGrfG9vRk
-		String id = createdEntry.getId();
-		return id.substring(id.lastIndexOf(':') + 1);
+		try {
+			VideoEntry createdEntry = service.insert(new URL(uploadUrl),
+					newEntry);
+			// tag:youtube.com,2008:video:9yCGrfG9vRk
+			String id = createdEntry.getId();
+			return id.substring(id.lastIndexOf(':') + 1);
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "On publish", e);
+			return "";
+		}
+	}
+
+	private static String conv(String s) {
+		if (s == null || s.length() == 0)
+			return "Video";
+		return s.replaceAll("ä", "ae").replaceAll("Ä", "Ae")
+				.replaceAll("ö", "oe").replaceAll("Ö", "Oe")
+				.replaceAll("ü", "ue").replaceAll("U", "Ue")
+				.replaceAll("ß", "ss").replaceAll(">", ")")
+				.replaceAll("<", "(");
 	}
 
 }

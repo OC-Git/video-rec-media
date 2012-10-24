@@ -28,6 +28,7 @@ public class Upload extends HttpServlet {
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
+		req.setCharacterEncoding("UTF-8");
 		if (!ServletFileUpload.isMultipartContent(req)) {
 			resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			return;
@@ -59,12 +60,13 @@ public class Upload extends HttpServlet {
 		FileItem fileItem = request.get("file");
 		File file = File.createTempFile("upload", fileItem.getName());
 		fileItem.write(file);
-		String client = request.get("client").getString();
-		String title = request.get("title").getString();
-		String page = request.get("page").getString();
-		String category = request.get("category").getString();
-		String description = request.get("description").getString();
-		String key = request.get("key").getString();
+		String encoding = "UTF-8";
+		String client = request.get("client").getString(encoding);
+		String title = request.get("title").getString(encoding);
+		String page = request.get("page").getString(encoding);
+		String category = request.get("category").getString(encoding);
+		String description = request.get("description").getString(encoding);
+		String key = request.get("key").getString(encoding);
 		Handler.handle(file, true, client, title, page, category, description,
 				key);
 	}
