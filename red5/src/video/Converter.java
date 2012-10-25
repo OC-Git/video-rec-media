@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 public class Converter {
+	private static final String CONVERTED_EXTENSION = "flv";
 	private static final Logger log = Logger.getLogger(Converter.class
 			.getName());
 
@@ -15,7 +16,7 @@ public class Converter {
 			log.info("Converter script not available: " + script);
 			return input;
 		}
-		File output = new File(changeExtension(input, "flv"));
+		File output = new File(changeExtension(input, CONVERTED_EXTENSION));
 		String[] cmd = new String[3];
 		cmd[0] = script.getAbsolutePath();
 		cmd[1] = input.getAbsolutePath();
@@ -60,5 +61,9 @@ public class Converter {
 		} else {
 			return "";
 		}
+	}
+
+	public static boolean requiresConversion(File original) {
+		return !CONVERTED_EXTENSION.equalsIgnoreCase(getExtension(original));
 	}
 }

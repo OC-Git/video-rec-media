@@ -28,7 +28,7 @@ public class Handler {
 			log.info("Reserved id: " + id + ", token=" + token);
 			S3 s3 = new S3();
 			File converted = original;
-			if (convert) {
+			if (convert && Converter.requiresConversion(original)) {
 				String originalKey = client + "/" + id + ".original."
 						+ Converter.getExtension(original);
 				s3.upload(originalKey, original);
