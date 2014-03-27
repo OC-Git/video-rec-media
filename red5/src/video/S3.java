@@ -18,9 +18,9 @@ public class S3 {
 	private String bucket;
 
 	public S3() {
-		key = getConf("AWS_KEY", "AKIAJDJV7E7ILRKUWPQQ");
+		key = getConf("AWS_KEY", "???");
 		secret = getConf("AWS_SECRET",
-				"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");
+				"???");
 		bucket = getConf("LVR_BUCKET", "66and33-dev");
 	}
 
